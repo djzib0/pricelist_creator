@@ -75,7 +75,7 @@ def create_list_file_pl(files_list, file_name):
     row = 1
     wb = Workbook()
     ws = wb.active
-    column_names = ['Poz.', 'Nazwa', 'Rysunek', 'Cena/szt.', 'Uwagi']
+    column_names = ['Poz.', 'Nazwa', 'Rysunek', 'Cena/szt. [PLN]', 'Uwagi']
 
     # setting column widths
     ws.column_dimensions['A'].width = len(column_names[0]) + 1
@@ -116,7 +116,7 @@ def create_list_file_pl(files_list, file_name):
         column_names = []
         wb_to_read = openpyxl.load_workbook(str(file), data_only=True)
         ws_to_read = wb_to_read.active
-        for cell_row in range(1, 100):
+        for cell_row in range(1, 100):  # zmienić na max_row
             if ws_to_read.cell(row=cell_row, column=1).value == 'Description':
                 name = ws_to_read.cell(row=cell_row, column=2).value
             if ws_to_read.cell(row=cell_row, column=1).value == 'Drawing/ident':
@@ -132,6 +132,7 @@ def create_list_file_pl(files_list, file_name):
             ws.cell(row=row, column=i).value = str(column_names[i-1])
             ws.cell(row=row, column=i).alignment = center_alignment
             ws.cell(row=row, column=i).border = thin_border
+
         row += 1
         pos_number += 1
 
@@ -150,6 +151,12 @@ def create_list_file_pl(files_list, file_name):
         width_of_column = max(values, key=len) # from each column longest word is taken to determine width of column
         column_letter = get_column_letter(column) # getting letter of iterated column
         ws.column_dimensions[column_letter].width = len(width_of_column) + 1 # setting width of current column acc. longest word + 1
+
+    # formatting cells in column D as float
+    for row in range(2, last_row + 1): # iteration through cells
+        print(ws.cell(row=row, column=4).value)
+        ws.cell(row=row, column=4).value = float(ws.cell(row=row, column=4).value)
+        ws.cell(row=row, column=4).number_format = '#,##0.00'
 
     wb.save(str(final_file_name))
 
