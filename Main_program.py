@@ -14,6 +14,7 @@ file_name_pl = "Nazwa tworzonego pliku:"
 amt_of_valid_files_pl = "Ilość plików do przetworzenia:"
 amt_of_invalid_files_pl = "Ilość plików nie spełniających warunków"
 app_language_pl = "Język"
+app_currency_pl = "Waluta"
 file_name = 'Lista cen test.xlsx'
 
 xlsx_files_list = []
@@ -36,7 +37,6 @@ def select_valid_xlsx_files(file_list):
     import openpyxl
     """Sorts chosen xlsx files to valid or invalid."""
     list = file_list
-    print("Kurwa! marker")
     print(list)
     valid_xlsx_files = []
     checklist = ['Customer', 'Ref. customer', 'Description', 'Drawing/ident']
@@ -45,6 +45,7 @@ def select_valid_xlsx_files(file_list):
     for file in list:
         print("Nazwa pliku " + str(file))
         wb_to_read = openpyxl.load_workbook(str(file), data_only=True)
+
         ws_to_read = wb_to_read.active
         error_list = []
         for row_num in range(3, 7):
@@ -58,16 +59,17 @@ def select_valid_xlsx_files(file_list):
         else:
             invalid_xlsx_files.append(file)
 
-    print("To jest kurwa mać poprawna lista xlsx")
+    print("To jest poprawna lista xlsx")
     print(valid_xlsx_files)
     return valid_xlsx_files, invalid_xlsx_files
 
 
-# write a code to create a file list
-#xlsx_files_list = ['empty_book.xlsx', 'empty_book_1.xlsx']
+def create_list_file_pl(files_list, file_name, chosen_language, chosen_currency):
+    """Creates final file with the given name, in selected language"""
 
-def create_list_file_pl(files_list, file_name):
     import openpyxl
+    language = chosen_language
+    currency = chosen_currency
     list = files_list
     final_file_name = str(file_name) + ".xlsx"
     """Creates pricelist from excel files"""
@@ -75,14 +77,24 @@ def create_list_file_pl(files_list, file_name):
     row = 1
     wb = Workbook()
     ws = wb.active
-    column_names = ['Poz.', 'Nazwa', 'Rysunek', 'Cena/szt. [PLN]', 'Uwagi']
+    column_names_pl = ['Poz.', 'Nazwa', 'Rysunek', 'Cena/szt.', 'Uwagi']
+    column_names_eng = ['Pos.', 'Name', 'Drawing', 'Price/pc.', 'Uwagi']
+    if chosen_currency == 'pln':
+        column_names_pl[3] += str(' [PLN]')
+        column_names_eng[3] += str(' [PLN]')
+    elif chosen_currency == 'euro':
+        column_names_pl[3] += str(' [€]')
+        column_names_eng[3] += str(' [€]')
 
-    # setting column widths
-    ws.column_dimensions['A'].width = len(column_names[0]) + 1
+    # setting column A width
+    ws.column_dimensions['A'].width = len(column_names_pl[0]) + 1
 
 
-    for i in range(1, len(column_names)+1):
-        ws.cell(row=row, column=i).value = str(column_names[i-1])
+    for i in range(1, len(column_names_pl)+1):
+        if language == 'pol':
+            ws.cell(row=row, column=i).value = str(column_names_pl[i-1])
+        elif language == 'eng':
+            ws.cell(row=row, column=i).value = str(column_names_eng[i-1])
         # Setting styles of top row with column names
         grey_fill = PatternFill(fill_type='solid',
                            start_color='00C0C0C0',
@@ -102,8 +114,6 @@ def create_list_file_pl(files_list, file_name):
         ws.cell(row=row, column=i).alignment = center_alignment
         ws.cell(row=row, column=i).border = thin_border
     # Creating column names
-    ### Dodać formatowanie!!!!!! Szerokość kolumn ustawić na podstawie najdłuższej nazwy
-    #### Szerokość kolumny, czcionka, wielkość czcionki, ramkę tabeli, kolor tła,
     ##### Następny etap: jeżeli uwag jest więcej niż jedna, dodać każdą w nowym wierszu, ale scalić pozostałe i wyśrodkować!!!!
     ##### Zacząć od uwag???
     row = 2
@@ -163,13 +173,14 @@ def create_list_file_pl(files_list, file_name):
 class MainPage(QWidget):
     def __init__(self, title):
         super().__init__() # inherit init of QWidget
+        import openpyxl
         self.title = title
         self.left = 250
         self.top = 250
         self.width = 600
         self.height = 400
         self.widget_pos_x = 10
-        self.widget_pos_y = 50
+        self.widget_pos_y = 20
         self.label_width = 180 # set height of labels
         self.label_height = 50 # sets height of labels
         self.valid_xlsx_files = []
@@ -184,11 +195,11 @@ class MainPage(QWidget):
     def create_widgets_pl(self):
         # Widgets
         """Row 0"""
-        self.file_name_lbl = QLabel(self, text=str("Lista cen"))
-        self.file_name_lbl.setGeometry(QRect(self.widget_pos_x, self.widget_pos_y,
+        self.file_name_lbl = QLabel(self, text=str("Nazwa pliku"))
+        self.file_name_lbl.setGeometry(QRect(self.widget_pos_x, self.widget_pos_y+30,
                                              self.label_width, self.label_height))
         self.file_name_lbl.setWordWrap(True) # allow word-wrap
-        self.widget_pos_y += 50
+        self.widget_pos_y += 115
 
         self.amt_of_valid_files_lbl = QLabel(self, text=str(amt_of_valid_files_pl))
         self.amt_of_valid_files_lbl.setGeometry(QRect(self.widget_pos_x, self.widget_pos_y,
@@ -213,12 +224,39 @@ class MainPage(QWidget):
         self.app_language_lbl = QLabel(self, text=str(app_language_pl))
         self.app_language_lbl.setGeometry(QRect(self.widget_pos_x, self.widget_pos_y,
                                                 self.label_width, self.label_height))
+
+        self.app_currency_lbl = QLabel(self, text=str(app_currency_pl))
+        self.app_currency_lbl.setGeometry(QRect(self.widget_pos_x, self.widget_pos_y+20,
+                                                self.label_width, self.label_height))
+
+        button_layout_1 = QVBoxLayout()
         self.app_language_pl_radio = QRadioButton('POL', self)
-        self.app_language_pl_radio.setChecked(True)
         self.app_language_pl_radio.move(self.widget_pos_x + 50, self.widget_pos_y+16.5)
 
         self.app_language_eng_radio = QRadioButton('ANG', self)
-        self.app_language_eng_radio.move(self.widget_pos_x + 100, self.widget_pos_y+16.5)
+        self.app_language_eng_radio.move(self.widget_pos_x + 110, self.widget_pos_y+16.5)
+
+        button_layout_1.addWidget(self.app_language_pl_radio)
+        button_layout_1.addWidget(self.app_language_eng_radio)
+
+        self.widget_pos_y += 35
+
+        self.app_currency_pl_radio = QRadioButton('PLN', self)
+        self.app_currency_pl_radio.move(self.widget_pos_x + 50, self.widget_pos_y)
+
+        self.app_currency_eng_radio = QRadioButton('€', self)
+        self.app_currency_eng_radio.move(self.widget_pos_x + 110, self.widget_pos_y)
+
+        self.bg_1 = QButtonGroup() # Radiobutton group for language choice
+        self.bg_1.addButton(self.app_language_pl_radio)
+        self.bg_1.addButton(self.app_language_eng_radio)
+
+        self.bg_2 = QButtonGroup() # Radiobutton group for currency choice
+        self.bg_2.addButton(self.app_currency_pl_radio)
+        self.bg_2.addButton(self.app_currency_eng_radio)
+        self.app_currency_pl_radio.setChecked(True)
+        self.app_language_pl_radio.setChecked(True)
+
         self.widget_pos_y += 65
 
         self.file_name_entry = QLineEdit(self, text="Lista cen")
@@ -237,25 +275,80 @@ class MainPage(QWidget):
 
         self.show()
 
+    def check_if_file_are_closed(self, files):
+        import openpyxl
+        """Checks if any file is opened."""
+        try:
+            for file in files:
+                wb = openpyxl.load_workbook(str(file))
+        except PermissionError:
+            print("Print plik " + str(file) + " jest otwarty.")
+
+
+    def check_language(self):
+        """Sets language for column names in final file."""
+        language = ''
+        if self.app_language_pl_radio.isChecked():
+            return 'pol'
+        elif self.app_language_eng_radio.isChecked():
+            return 'eng'
+
+    def check_currency(self):
+        currency = ''
+        if self.app_currency_pl_radio.isChecked():
+            return 'pln'
+        elif self.app_currency_eng_radio.isChecked():
+            return 'euro'
+
+    """Message windows"""
+    def show_file_exists_msg(self):
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Warning)
+        msg.setText("Plik o takiej nazwiej już istnieje. Czy chcesz go nadpisać?")
+        msg.setWindowTitle("Wystąpił błąd!")
+        msg.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        retval = msg.exec_()
+        #if retval == QMessageBox.Ok:
+        #    print("OK Clicked")
+        #elif retval == QMessageBox.Cancel:
+        #    print("Cancel Clicked")
+        return retval
+
     @pyqtSlot()
     def create_file_name(self):
         file_name = self.file_name_entry.text()
-        print("Nazwa pliku to KURWA MAĆ " + str(file_name))
         return file_name
 
     @pyqtSlot()
     def generate_file(self):
+        files_list = select_xlsx_files()
         file_name = self.create_file_name()
-        self.valid_xlsx_files = select_xlsx_files()
-        print("\nTo jest list wybranych plików z rozszerzeniem xlsx")
-        print(self.valid_xlsx_files)
-        self.valid_files, self.invalid_files = select_valid_xlsx_files(self.valid_xlsx_files)
-        print("\nTo jest lista poprawnych plików xlsx")
-        print(self.valid_files)
-        print("\nTo jest lista niepoprawnych plików xlsx")
-        print(self.invalid_files)
-        create_list_file_pl(self.valid_files, file_name)
-
+        language = self.check_language()
+        currency = self.check_currency()
+        if str(file_name) + ".xlsx" in files_list:
+            choice = self.show_file_exists_msg()
+            if choice == QMessageBox.Yes:
+                print("Yes Clicked")
+                try:
+                    self.valid_xlsx_files = select_xlsx_files()
+                except PermissionError:
+                    print("Tutaj jest błąd dostępu")
+                self.check_if_file_are_closed(self.valid_xlsx_files)
+                print("\nTo jest lista wybranych plików z rozszerzeniem xlsx")
+                print(self.valid_xlsx_files)
+                self.valid_files, self.invalid_files = select_valid_xlsx_files(self.valid_xlsx_files)
+                print("\nTo jest lista poprawnych plików xlsx")
+                print(self.valid_files)
+                print("\nTo jest lista niepoprawnych plików xlsx")
+                print(self.invalid_files)
+                create_list_file_pl(self.valid_files, file_name, language, currency)
+            elif choice == QMessageBox.No:
+                print("No Clicked")
+        else:
+            self.valid_xlsx_files = select_xlsx_files()
+            self.valid_files, self.invalid_files = select_valid_xlsx_files(self.valid_xlsx_files)
+            print(self.valid_files)
+            create_list_file_pl(self.valid_files, file_name, language, currency)
 
 def main():
     app = QApplication(sys.argv)
